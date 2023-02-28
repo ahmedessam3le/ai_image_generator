@@ -28,6 +28,7 @@ class ApiServices {
     if (response.statusCode == 200) {
       var data = jsonDecode(response.body.toString());
       log('------------------------ generateImage RESPONSE ------------------------\n$data');
+      return data['data'][0]['url'].toString();
     } else {
       log('------------------------ generateImage ERROR ------------------------');
     }

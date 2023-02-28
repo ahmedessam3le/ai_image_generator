@@ -14,7 +14,8 @@ class _HomeViewState extends State<HomeView> {
   var values = ['256x256', '512x512', '1024x1024'];
   String? selectedValue;
   var textController = TextEditingController();
-  String? image = '';
+  String image = '';
+  var isImageLoaded = false;
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -28,6 +29,19 @@ class _HomeViewState extends State<HomeView> {
             color: AppColors.whiteColor,
           ),
         ),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.all(8),
+                backgroundColor: AppColors.buttonColor,
+              ),
+              onPressed: () {},
+              child: const Text('My Arts'),
+            ),
+          ),
+        ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(8),
@@ -110,10 +124,16 @@ class _HomeViewState extends State<HomeView> {
                       onPressed: () async {
                         if (textController.text.trim().isNotEmpty &&
                             selectedValue!.trim().isNotEmpty) {
+                          setState(() {
+                            isImageLoaded = false;
+                          });
                           image = await ApiServices.generateImage(
                             description: textController.text,
                             size: selectedValue!,
                           );
+                          setState(() {
+                            isImageLoaded = true;
+                          });
                         } else {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
@@ -131,10 +151,83 @@ class _HomeViewState extends State<HomeView> {
             ),
             Expanded(
               flex: 4,
-              child: Container(
-                color: Colors.amber,
-              ),
+              child: isImageLoaded
+                  ? Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          clipBehavior: Clip.antiAlias,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Image.network(
+                            image,
+                            fit: BoxFit.contain,
+                          ),
+                        ),
+                        const SizedBox(height: 48),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: ElevatedButton.icon(
+                                style: ElevatedButton.styleFrom(
+                                  padding: const EdgeInsets.all(8),
+                                  backgroundColor: AppColors.buttonColor,
+                                ),
+                                onPressed: () {},
+                                icon: const Icon(
+                                    Icons.download_for_offline_rounded),
+                                label: const Text('Download'),
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: ElevatedButton.icon(
+                                style: ElevatedButton.styleFrom(
+                                  padding: const EdgeInsets.all(8),
+                                  backgroundColor: AppColors.buttonColor,
+                                ),
+                                onPressed: () {},
+                                icon: const Icon(Icons.share),
+                                label: const Text('Share'),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    )
+                  : Container(
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: AppColors.whiteColor,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Image.asset('assets/images/loader.gif'),
+                          const SizedBox(height: 16),
+                          const Text(
+                            'Waiting for image to be generated ...',
+                            style: TextStyle(
+                              fontSize: 18,
+                              color: AppColors.backgroundColor,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
             ),
+            const Padding(
+              padding: EdgeInsets.all(8.0),
+              child: Text(
+                'Developed by Ahmed Essam',
+                style: TextStyle(
+                  color: AppColors.whiteColor,
+                  fontSize: 14,
+                ),
+              ),
+            )
           ],
         ),
       ),
