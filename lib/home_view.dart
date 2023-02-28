@@ -1,3 +1,4 @@
+import 'package:ai_image_generator/api_services.dart';
 import 'package:ai_image_generator/app_colors.dart';
 import 'package:flutter/material.dart';
 
@@ -12,6 +13,8 @@ class _HomeViewState extends State<HomeView> {
   var sizes = ['Small', 'Medium', 'Large'];
   var values = ['256x256', '512x512', '1024x1024'];
   String? selectedValue;
+  var textController = TextEditingController();
+  String? image = '';
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -48,6 +51,7 @@ class _HomeViewState extends State<HomeView> {
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: TextFormField(
+                            controller: textController,
                             decoration: const InputDecoration(
                               hintText: 'eg: A monkey on the moon',
                               border: InputBorder.none,
@@ -74,7 +78,11 @@ class _HomeViewState extends State<HomeView> {
                               Icons.expand_more,
                               color: AppColors.buttonColor,
                             ),
-                            onChanged: (value) {},
+                            onChanged: (value) {
+                              setState(() {
+                                selectedValue = value;
+                              });
+                            },
                             items: List.generate(
                               sizes.length,
                               (index) {
@@ -99,7 +107,22 @@ class _HomeViewState extends State<HomeView> {
                         backgroundColor: AppColors.buttonColor,
                         shape: const StadiumBorder(),
                       ),
-                      onPressed: () {},
+                      onPressed: () async {
+                        if (textController.text.trim().isNotEmpty &&
+                            selectedValue!.trim().isNotEmpty) {
+                          image = await ApiServices.generateImage(
+                            description: textController.text,
+                            size: selectedValue!,
+                          );
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                  'Please enter a description and select the size'),
+                            ),
+                          );
+                        }
+                      },
                       child: const Text('Generate'),
                     ),
                   ),
