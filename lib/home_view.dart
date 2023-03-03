@@ -1,6 +1,13 @@
+import 'dart:developer';
+import 'dart:io';
+
 import 'package:ai_image_generator/api_services.dart';
 import 'package:ai_image_generator/app_colors.dart';
 import 'package:flutter/material.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:screenshot/screenshot.dart';
+import 'package:share_plus/share_plus.dart';
 
 class HomeView extends StatefulWidget {
   const HomeView({Key? key}) : super(key: key);
@@ -16,6 +23,115 @@ class _HomeViewState extends State<HomeView> {
   var textController = TextEditingController();
   String image = '';
   var isImageLoaded = false;
+
+  ScreenshotController screenshotController = ScreenshotController();
+
+  shareImage() async {
+    var photo = await screenshotController.capture(
+      delay: const Duration(milliseconds: 100),
+      pixelRatio: 1.0,
+    );
+
+    if (photo != null) {
+      final directory = (await getApplicationDocumentsDirectory()).path;
+      const fileName = 'share.png';
+      final imagePath = await File('$directory/$fileName').create();
+
+      await imagePath.writeAsBytes(photo);
+
+      Share.shareXFiles([imagePath as XFile], text: 'AI Image Gen.');
+    } else {
+      log('----------------- shareImage ERROR ----------------\nFailed to take screenshot');
+    }
+  }
+
+  downloadImage() async {
+    var permissionResult = await Permission.storage.request();
+    var manageStoragePermissionResult =
+        await Permission.manageExternalStorage.request();
+
+    if (permissionResult.isGranted && manageStoragePermissionResult.isGranted) {
+      const folderName = 'AI Image Gen';
+      final path = Directory('storage/emulated/0/$folderName');
+      final fileName = '${DateTime.now().microsecondsSinceEpoch}.png';
+
+      if (await path.exists()) {
+        await screenshotController.captureAndSave(
+          path.path,
+          delay: const Duration(milliseconds: 100),
+          fileName: fileName,
+          pixelRatio: 1.0,
+        );
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            padding: const EdgeInsets.symmetric(
+              vertical: 16,
+              horizontal: 8,
+            ),
+            backgroundColor: Colors.green,
+            content: SizedBox(
+              height: 30,
+              child: Center(
+                child: Text(
+                  'Image Downloaded to ${path.path}',
+                  style: TextStyle(fontSize: 16),
+                ),
+              ),
+            ),
+          ),
+        );
+      } else {
+        await path.create();
+
+        await screenshotController.captureAndSave(
+          path.path,
+          delay: const Duration(milliseconds: 100),
+          fileName: fileName,
+          pixelRatio: 1.0,
+        );
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            padding: const EdgeInsets.symmetric(
+              vertical: 16,
+              horizontal: 8,
+            ),
+            backgroundColor: Colors.green,
+            content: SizedBox(
+              height: 30,
+              child: Center(
+                child: Text(
+                  'Image Downloaded to ${path.path}',
+                  style: TextStyle(fontSize: 16),
+                ),
+              ),
+            ),
+          ),
+        );
+      }
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          padding: EdgeInsets.symmetric(
+            vertical: 16,
+            horizontal: 8,
+          ),
+          backgroundColor: Colors.red,
+          content: SizedBox(
+            height: 30,
+            child: Center(
+              child: Text(
+                'Permission Denied',
+                style: TextStyle(fontSize: 16),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -123,6 +239,7 @@ class _HomeViewState extends State<HomeView> {
                       ),
                       onPressed: () async {
                         if (textController.text.trim().isNotEmpty &&
+                            selectedValue != null &&
                             selectedValue!.trim().isNotEmpty) {
                           setState(() {
                             isImageLoaded = false;
@@ -137,8 +254,20 @@ class _HomeViewState extends State<HomeView> {
                         } else {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
-                              content: Text(
-                                  'Please enter a description and select the size'),
+                              padding: EdgeInsets.symmetric(
+                                vertical: 16,
+                                horizontal: 8,
+                              ),
+                              backgroundColor: Colors.red,
+                              content: SizedBox(
+                                height: 30,
+                                child: Center(
+                                  child: Text(
+                                    'Please enter a description and select the size',
+                                    style: TextStyle(fontSize: 16),
+                                  ),
+                                ),
+                              ),
                             ),
                           );
                         }
@@ -160,9 +289,12 @@ class _HomeViewState extends State<HomeView> {
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          child: Image.network(
-                            image,
-                            fit: BoxFit.contain,
+                          child: Screenshot(
+                            controller: screenshotController,
+                            child: Image.network(
+                              image,
+                              fit: BoxFit.contain,
+                            ),
                           ),
                         ),
                         const SizedBox(height: 48),
@@ -174,7 +306,9 @@ class _HomeViewState extends State<HomeView> {
                                   padding: const EdgeInsets.all(8),
                                   backgroundColor: AppColors.buttonColor,
                                 ),
-                                onPressed: () {},
+                                onPressed: () async {
+                                  await downloadImage();
+                                },
                                 icon: const Icon(
                                     Icons.download_for_offline_rounded),
                                 label: const Text('Download'),
@@ -187,7 +321,9 @@ class _HomeViewState extends State<HomeView> {
                                   padding: const EdgeInsets.all(8),
                                   backgroundColor: AppColors.buttonColor,
                                 ),
-                                onPressed: () {},
+                                onPressed: () async {
+                                  await shareImage();
+                                },
                                 icon: const Icon(Icons.share),
                                 label: const Text('Share'),
                               ),
