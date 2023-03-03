@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:ai_image_generator/api_services.dart';
 import 'package:ai_image_generator/app_colors.dart';
+import 'package:ai_image_generator/my_arts_view.dart';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -153,7 +154,13 @@ class _HomeViewState extends State<HomeView> {
                 padding: const EdgeInsets.all(8),
                 backgroundColor: AppColors.buttonColor,
               ),
-              onPressed: () {},
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => const MyArtsView(),
+                  ),
+                );
+              },
               child: const Text('My Arts'),
             ),
           ),
